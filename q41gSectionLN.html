@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" type="text/css" href="style.css">
+    <title>Add a Movie</title>
+</head>
+
+<body>
+    <h1 class="linear-text-gradient">Add a Movie</h1>
+    <form method="post" id="movieForm">
+        <label for="movieTitle">Title:</label><br/>
+        <input placeholder="Enter Movie Title" type="text" id="movieTitle" name="movieTitle" onblur="checkEmpty(this)"> <br><br>
+
+        <label for="movieYear">Year:</label><br/>
+        <input placeholder="Enter Release Year" type="number" id="movieYear" name="movieYear" onblur="checkEmpty(this)"> <br><br>
+
+        <label for="movieGenre">Genre:</label><br/>
+        <select id="movieGenre" name="movieGenre">
+            <option value="Action">Action</option>
+            <option value="Comedy">Comedy</option>
+            <option value="Drama">Drama</option>
+            <option value="Horror">Horror</option>
+        </select> <br><br>
+
+        <label>Rating:</label>
+        <div class="rating">
+            <input type="radio" id="star5" name="movieRating" value="5"><label for="star5"></label>
+            <input type="radio" id="star4" name="movieRating" value="4"><label for="star4"></label>
+            <input type="radio" id="star3" name="movieRating" value="3"><label for="star3"></label>
+            <input type="radio" id="star2" name="movieRating" value="2"><label for="star2"></label>
+            <input type="radio" id="star1" name="movieRating" value="1"><label for="star1"></label>
+        </div>
+
+        <button type="submit">Add Movie</button>
+    </form>
+
+    <h1 class="linear-text-gradient">Movie List</h1>
+    <div id="movieContainer"></div>      
+
+    <script>
+        function checkEmpty(el) {
+            if (!el.value.trim()) {
+                el.classList.add('error');
+            } else {
+                el.classList.remove('error');
+            }
+        }
+
+        // delete func 
+        function deleteMovie(index) {
+            if (!confirm('Are you sure you want to delete this movie?')) return;
+
+            const key = 'movieCollection';
+            const movies = JSON.parse(localStorage.getItem(key) || '[]');
+            
+            // Remove 1 item at the specific index
+            movies.splice(index, 1);
+            localStorage.setItem(key, JSON.stringify(movies));
+            displayMovies();
+        }
+
+        // read func 
+        function displayMovies() {
+            const container = document.getElementById('movieContainer');
+            const key = 'movieCollection';
+            const movies = JSON.parse(localStorage.getItem(key) || '[]');
+
+            container.innerHTML = '';
+
+            if (movies.length === 0) {
+                container.innerHTML = '<p style="color: #1dfff4;">No movies added yet.</p>';
+                return;
+            }
+
+            movies.forEach((movie, index) => {
+                const movieBox = document.createElement('div');
+                movieBox.className = 'movie-item-box';
+
+                let stars = '';
+                for (let i = 0; i < 5; i++) {
+                    stars += i < movie.rating ? '★' : '☆';
+                }
+
+                movieBox.innerHTML = `
+                    <div>
+                        <strong>${movie.title}</strong> (${movie.year})<br>
+                        <span style="font-size: 0.9em; opacity: 0.8;">${movie.genre}</span><br>
+                        <span class="star-display">${stars}</span>
+                    </div>
+                    <button onclick="deleteMovie(${index})" class="delete-btn">Delete</button>
+                `;
+                container.appendChild(movieBox);
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const form = document.getElementById('movieForm');
+            displayMovies();
+
+            form.addEventListener('submit', function (e) {
+                e.preventDefault();
+                const title = document.getElementById('movieTitle').value.trim();
+                const year = document.getElementById('movieYear').value.trim();
+                const rating = (document.querySelector('input[name="movieRating"]:checked') || {}).value || 0;
+
+                if (!title || !year) {
+                    alert('Please fill out the Title and Year.');
+                    return;
+                }
+
+                const movieData = {
+                    title: title,
+                    year: year,
+                    genre: document.getElementById('movieGenre').value,
+                    rating: rating,
+                    timestamp: new Date().toISOString()
+                };
+
+                const key = 'movieCollection'; 
+                const existing = JSON.parse(localStorage.getItem(key) || '[]');
+                existing.push(movieData);
+                localStorage.setItem(key, JSON.stringify(existing));
+
+                form.reset();
+                displayMovies();
+            });
+        });
+    </script>
+</body>
+</html>
