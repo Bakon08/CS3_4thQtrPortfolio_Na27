@@ -79,8 +79,9 @@
                 movieBox.className = 'movie-item-box';
 
                 let stars = '';
-                for (let i = 0; i < 5; i++) {
-                    stars += i < movie.rating ? '★' : '☆';
+                const rating = Math.round(parseFloat(movie.rating) || 0);
+                for (let i = 0; i < rating; i++) {
+                    stars += '★';
                 }
 
                 movieBox.innerHTML = `
@@ -103,26 +104,50 @@
                 e.preventDefault();
                 const title = document.getElementById('movieTitle').value.trim();
                 const year = document.getElementById('movieYear').value.trim();
-                const rating = (document.querySelector('input[name="movieRating"]:checked') || {}).value || 0;
+                const newRating = parseFloat((document.querySelector('input[name="movieRating"]:checked') || {}).value) || 0;
 
                 if (!title || !year) {
                     alert('Please fill out the Title and Year.');
                     return;
                 }
 
-                const movieData = {
-                    title: title,
-                    year: year,
-                    genre: document.getElementById('movieGenre').value,
-                    rating: rating,
-                    timestamp: new Date().toISOString()
-                };
-
                 const key = 'movieCollection'; 
-                const existing = JSON.parse(localStorage.getItem(key) || '[]');
-                existing.push(movieData);
-                localStorage.setItem(key, JSON.stringify(existing));
+                const movies = JSON.parse(localStorage.getItem(key) || '[]');
+                
+                // Check if movie with same title already exists (case-insensitive)
+                const existingMovieIndex = movies.findIndex(movie => movie.title.toLowerCase() === title.toLowerCase());
 
+                if (existingMovieIndex !== -1) {
+                    // Movie exists - update it and average the ratings
+                    const existingMovie = movies[existingMovieIndex];
+                    const ratingCount = (existingMovie.ratingCount || 1);
+                    const oldRating = parseFloat(existingMovie.rating) || 0;
+                    
+                    // Calculate average rating
+                    const averageRating = (oldRating * ratingCount + newRating) / (ratingCount + 1);
+                    
+                    // Update the existing movie
+                    existingMovie.year = year;
+                    existingMovie.genre = document.getElementById('movieGenre').value;
+                    existingMovie.rating = averageRating;
+                    existingMovie.ratingCount = ratingCount + 1;
+                    existingMovie.lastUpdated = new Date().toISOString();
+                    
+                    alert(`Movie "${title}" updated! Average rating is now ${averageRating.toFixed(2)}/5`);
+                } else {
+                    // New movie - add it
+                    const movieData = {
+                        title: title,
+                        year: year,
+                        genre: document.getElementById('movieGenre').value,
+                        rating: newRating,
+                        ratingCount: 1,
+                        timestamp: new Date().toISOString()
+                    };
+                    movies.push(movieData);
+                }
+
+                localStorage.setItem(key, JSON.stringify(movies));
                 form.reset();
                 displayMovies();
             });
